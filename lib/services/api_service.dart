@@ -1,4 +1,3 @@
-// api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -6,7 +5,12 @@ class ApiService {
   final String _searchBaseUrl = 'https://openlibrary.org/search.json?title=';
   final String _authorSearchBaseUrl = 'https://openlibrary.org/search.json?author=';
 
-  Future<List<Map<String, dynamic>>> fetchBooks(String query) async {
+  /// Fetch books based on the title query and optional date range
+  Future<List<Map<String, dynamic>>> fetchBooks(
+      String query, {
+        int minYear = 1800,
+        int maxYear = 2023,
+      }) async {
     final url = Uri.parse('$_searchBaseUrl$query');
     final response = await http.get(url);
 
@@ -16,14 +20,19 @@ class ApiService {
 
       if (data['docs'] != null && data['docs'].isNotEmpty) {
         for (var book in data['docs']) {
-          books.add({
-            'title': book['title'] ?? 'Unknown Title',
-            'author': book['author_name']?.join(', ') ?? 'Unknown Author',
-            'cover': book['cover_i'] != null
-                ? 'https://covers.openlibrary.org/b/id/${book['cover_i']}-M.jpg'
-                : null,
-            'key': book['key'],
-          });
+          int? publishYear = book['first_publish_year'];
+          if (publishYear != null &&
+              publishYear >= minYear &&
+              publishYear <= maxYear) {
+            books.add({
+              'title': book['title'] ?? 'Unknown Title',
+              'author': book['author_name']?.join(', ') ?? 'Unknown Author',
+              'cover': book['cover_i'] != null
+                  ? 'https://covers.openlibrary.org/b/id/${book['cover_i']}-M.jpg'
+                  : null,
+              'key': book['key'],
+            });
+          }
         }
       }
       return books;
@@ -32,6 +41,7 @@ class ApiService {
     }
   }
 
+  /// Fetch detailed information for a specific book by its key
   Future<Map<String, dynamic>> fetchBookDetails(String bookKey) async {
     final detailsUrl = Uri.parse('https://openlibrary.org$bookKey.json');
     final detailsResponse = await http.get(detailsUrl);
@@ -67,7 +77,11 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchBooksByAuthor(String author, String currentBookTitle) async {
+  /// Fetch books by the same author, excluding the current book title
+  Future<List<Map<String, dynamic>>> fetchBooksByAuthor(
+      String author,
+      String currentBookTitle,
+      ) async {
     final url = Uri.parse('$_authorSearchBaseUrl$author');
     final response = await http.get(url);
 

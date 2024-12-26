@@ -1,4 +1,3 @@
-// search_and_results_screen.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -18,6 +17,9 @@ class _SearchAndResultsScreenState extends State<SearchAndResultsScreen> {
 
   bool _isLoading = false;
   List<Map<String, dynamic>> _books = [];
+  RangeValues _selectedRange = RangeValues(1800, 2023); // Default range
+  static const int _minYear = 1800;
+  static const int _maxYear = 2023;
 
   void _searchBooks() async {
     if (_formKey.currentState!.validate()) {
@@ -27,7 +29,11 @@ class _SearchAndResultsScreenState extends State<SearchAndResultsScreen> {
       });
 
       // Fetch books from the API
-      final books = await _apiService.fetchBooks(_searchController.text);
+      final books = await _apiService.fetchBooks(
+        _searchController.text,
+        minYear: _selectedRange.start.toInt(),
+        maxYear: _selectedRange.end.toInt(),
+      );
 
       setState(() {
         _books = books;
@@ -56,6 +62,30 @@ class _SearchAndResultsScreenState extends State<SearchAndResultsScreen> {
                   return null;
                 },
               ),
+            ),
+            SizedBox(height: 16.0),
+            Text(
+              'Filter by Publish Date',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            RangeSlider(
+              values: _selectedRange,
+              min: _minYear.toDouble(),
+              max: _maxYear.toDouble(),
+              divisions: _maxYear - _minYear,
+              labels: RangeLabels(
+                _selectedRange.start.toInt().toString(),
+                _selectedRange.end.toInt().toString(),
+              ),
+              onChanged: (RangeValues newRange) {
+                setState(() {
+                  _selectedRange = newRange;
+                });
+              },
+            ),
+            Text(
+              'Selected Range: ${_selectedRange.start.toInt()} - ${_selectedRange.end.toInt()}',
+              style: TextStyle(fontSize: 14),
             ),
             SizedBox(height: 16.0),
             ElevatedButton(
